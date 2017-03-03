@@ -44,7 +44,7 @@ My project includes the following files:
 * model.h5 containing a trained convolution neural network 
 * data_utils.py containing data functions used in drive.py and model.py
 * image_utils.py containing image related functions used in drive.py and model.py
-* writeup_report.md summarizing the results
+* writeup_report.md summarizing the results (same as README.md)
 * /videos folder contains mp4 videos
 
 Data training files are not included in the github repository.
