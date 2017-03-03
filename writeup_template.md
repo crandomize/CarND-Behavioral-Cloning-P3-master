@@ -6,6 +6,10 @@
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/_sS6V2vSLGw/0.jpg)](http://www.youtube.com/watch?v=_sS6V2vSLGw)
 
+<figure class="video_container">
+ <iframe width="560" height="315" src="https://www.youtube.com/embed/_sS6V2vSLGw" frameborder="0" allowfullscreen></iframe>
+</figure>
+
 
 ---
 
