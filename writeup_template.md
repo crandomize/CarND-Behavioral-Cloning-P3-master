@@ -1,8 +1,11 @@
-#**Behavioral Cloning** 
+# **Behavioral Cloning** 
 
-##Writeup Template
+## Writeup Template
 
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
+### This document is the writeup of the Project "Behavioral Cloning".  It explains the process for developing a keras/tensorflow based model to stear an autonomouse car simulator across 2 tracks
+
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/_sS6V2vSLGw/0.jpg)](http://www.youtube.com/watch?v=_sS6V2vSLGw)
+
 
 ---
 
@@ -18,8 +21,8 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/placeholder.png "Model Visualization"
-[image2]: ./examples/placeholder.png "Grayscaling"
+[image_model]: ./wrapupdata/model_layers.png "Model Layers"
+[image_loss]: ./wrapupdata/training_validation_loss.png "Training/Validation loss"
 [image3]: ./examples/placeholder_small.png "Recovery Image"
 [image4]: ./examples/placeholder_small.png "Recovery Image"
 [image5]: ./examples/placeholder_small.png "Recovery Image"
@@ -27,103 +30,263 @@ The goals / steps of this project are the following:
 [image7]: ./examples/placeholder_small.png "Flipped Image"
 
 ## Rubric Points
-###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
+### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
+
 
 ---
-###Files Submitted & Code Quality
+### Files Submitted & Code Quality
 
-####1. Submission includes all required files and can be used to run the simulator in autonomous mode
+#### 1. Submission includes all required files and can be used to run the simulator in autonomous mode
 
 My project includes the following files:
 * model.py containing the script to create and train the model
 * drive.py for driving the car in autonomous mode
 * model.h5 containing a trained convolution neural network 
-* writeup_report.md or writeup_report.pdf summarizing the results
+* data_utils.py containing data functions used in drive.py and model.py
+* image_utils.py containing image related functions used in drive.py and model.py
+* writeup_report.md summarizing the results
+* /videos folder contains mp4 videos
 
-####2. Submission includes functional code
+Data training files are not included in the github repository.
+
+#### 2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
 ```sh
 python drive.py model.h5
 ```
 
-####3. Submission code is usable and readable
+#### 3. Submission code is usable and readable
 
 The model.py file contains the code for training and saving the convolution neural network. The file shows the pipeline I used for training and validating the model, and it contains comments to explain how the code works.
 
-###Model Architecture and Training Strategy
+### Model Architecture and Training Strategy
 
-####1. An appropriate model architecture has been employed
+#### 1. Model Architecture
 
-My model consists of a convolution neural network with 3x3 filter sizes and depths between 32 and 128 (model.py lines 18-24) 
+Model used is a variation of the NVIDIA model from following paper:
 
-The model includes RELU layers to introduce nonlinearity (code line 20), and the data is normalized in the model using a Keras lambda layer (code line 18). 
+[NVIDIA - End to End Learning for Self-Driving Cars](https://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf)
 
-####2. Attempts to reduce overfitting in the model
+However several chnages have been implemented to improve final results for this specific use case.
+The following graph details the different layers of the model.
 
-The model contains dropout layers in order to reduce overfitting (model.py lines 21). 
+![Model][image_model]
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting (code line 10-16). The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
+The model consists on a convolutional neural network moving the original 3 filter depths corresponding to the RGB image planes up to a final 64 filter depth layer.
 
-####3. Model parameter tuning
+After the convolutional layers a series of 3 fully connected layers move to final 1 neuron layer.
 
-The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 25).
+RELU activation layers are used to introduce nonlinearity and we have included 2 Dropouts and 1 Pooling layer in the model.
 
-####4. Appropriate training data
+An initial normalization layer using lambda is also used at the begining in the model.
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... 
+I have tried to keep the model small enough to reduce degrees of freedom and specially to improve training times.  The final model has 77,569 trainable parameters.
 
-For details about how I created the training data, see the next section. 
+Below the output sample from the Keras summary.
 
-###Model Architecture and Training Strategy
+```sh
+Layer (type)                     Output Shape          Param #     Connected to
+====================================================================================================
+lambda_1 (Lambda)                (None, 64, 96, 3)     0           lambda_input_1[0][0]
+____________________________________________________________________________________________________
+convolution2d_1 (Convolution2D)  (None, 61, 93, 12)    588         lambda_1[0][0]
+____________________________________________________________________________________________________
+maxpooling2d_1 (MaxPooling2D)    (None, 30, 46, 12)    0           convolution2d_1[0][0]
+____________________________________________________________________________________________________
+convolution2d_2 (Convolution2D)  (None, 14, 22, 24)    4632        maxpooling2d_1[0][0]
+____________________________________________________________________________________________________
+convolution2d_3 (Convolution2D)  (None, 6, 10, 36)     13860       convolution2d_2[0][0]
+____________________________________________________________________________________________________
+dropout_1 (Dropout)              (None, 6, 10, 36)     0           convolution2d_3[0][0]
+____________________________________________________________________________________________________
+convolution2d_4 (Convolution2D)  (None, 2, 4, 64)      36928       dropout_1[0][0]
+____________________________________________________________________________________________________
+flatten_1 (Flatten)              (None, 512)           0           convolution2d_4[0][0]
+____________________________________________________________________________________________________
+dense_1 (Dense)                  (None, 40)            20520       flatten_1[0][0]
+____________________________________________________________________________________________________
+activation_1 (Activation)        (None, 40)            0           dense_1[0][0]
+____________________________________________________________________________________________________
+dropout_2 (Dropout)              (None, 40)            0           activation_1[0][0]
+____________________________________________________________________________________________________
+dense_2 (Dense)                  (None, 20)            820         dropout_2[0][0]
+____________________________________________________________________________________________________
+activation_2 (Activation)        (None, 20)            0           dense_2[0][0]
+____________________________________________________________________________________________________
+dense_3 (Dense)                  (None, 10)            210         activation_2[0][0]
+____________________________________________________________________________________________________
+activation_3 (Activation)        (None, 10)            0           dense_3[0][0]
+____________________________________________________________________________________________________
+dense_4 (Dense)                  (None, 1)             11          activation_3[0][0]
+====================================================================================================
+Total params: 77,569
+Trainable params: 77,569
 
-####1. Solution Design Approach
+```
 
-The overall strategy for deriving a model architecture was to ...
+#### 2. Attempts to reduce overfitting in the model
 
-My first step was to use a convolution neural network model similar to the ... I thought this model might be appropriate because ...
+Model contains different layers to reduce the overfitting.
+- Max Pooling Layer. With a 2x2 filter it reduces the number of plane sizes by half.  This reduces the degree of freedom of the network and increases training times.
+- Dropout Layer.  After 3rd convolutional layer a Dropout layer is introduced.  Purpose is to reduce overfitting.
+- Dropout Layer. After activation of first fully connected layer a second dropout layer to reduce overfitting is included.
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that my first model had a low mean squared error on the training set but a high mean squared error on the validation set. This implied that the model was overfitting. 
+The model was trained and validated from different sets.  This sets correspond to one lap recordings on the different tracks.
+Each track recording is stored in specific subfolders in main ./data folder.  **Training data used is NOT included**
 
-To combat the overfitting, I modified the model so that ...
+Many different track trainings were initially created, both tracks, in both directions, mouse and keyboard used, special recoveries, etc.
+At the end we just used following training sets:
+- data_track_2_right_1:  Driving in 2nd track on right side - Direction default - Input Mouse
+- data_2: Driving in track 1 - Direction default - Input Mouse
 
-Then I ... 
-
-The final step was to run the simulator to see how well the car was driving around track one. There were a few spots where the vehicle fell off the track... to improve the driving behavior in these cases, I ....
-
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
-
-####2. Final Model Architecture
-
-The final model architecture (model.py lines 18-24) consisted of a convolution neural network with the following layers and layer sizes ...
-
-Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
-
-![alt text][image1]
-
-####3. Creation of the Training Set & Training Process
-
-To capture good driving behavior, I first recorded two laps on track one using center lane driving. Here is an example image of center lane driving:
-
-![alt text][image2]
-
-I then recorded the vehicle recovering from the left side and right sides of the road back to center so that the vehicle would learn to .... These images show what a recovery looks like starting from ... :
-
-![alt text][image3]
-![alt text][image4]
-![alt text][image5]
-
-Then I repeated this process on track two in order to get more data points.
-
-To augment the data sat, I also flipped images and angles thinking that this would ... For example, here is an image that has then been flipped:
-
-![alt text][image6]
-![alt text][image7]
-
-Etc ....
-
-After the collection process, I had X number of data points. I then preprocessed this data by ...
+For validation we used same tracks but different laps recorded.
+To have better estimations we did not ramdonly splitted the original data in training and validation as many similar image sequences and steering angle values would end up in both sets, so we created new recorded laps for the validation.
 
 
-I finally randomly shuffled the data set and put Y% of the data into a validation set. 
+#### 3. Model parameter tuning
 
-I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was Z as evidenced by ... I used an adam optimizer so that manually training the learning rate wasn't necessary.
+Many different model variations were done and different parameters for the model tested.
+Both the final MSE (mean squared error) values for validation and empiric results in the automous driving test were done to select final model structures and parameters.
+
+The model used an adam optimizer and loss function based on mean squared error.  
+
+Based on final validation/training loss plot the number of epochs should be around 5, but we choosed to go up to 10 (maybe adding some overfitting)
+
+![Training Validation Loss][image_loss]
+
+Finally a dropout of 30% of neurons on both dropout layers is used.  This ensures sufficient reduction in overfitting.
+
+
+```sh 
+# Line 104 in process.py
+epochs = 10
+batch_size = 256  
+learing_rate = 0.001
+dropout = 0.3
+```
+
+
+#### 4. Creation of the Training Set & Training Process
+
+Different recorded laps on both tracks were done, generating many different subsets of recorded data.
+
+| Subfolder         	|     Track	        					| 
+|:---------------------:|:---------------------------------------------:| 
+| data_1         	| Track 1 - Direction Normal - Input Keyboard  		| 
+| data_2    	    | Track 1 - Direction Normal - Input Mouse  	    |
+| data_3			| Track 2 - Direction Normal - Input Keyboard		|
+| data_4	      	| Track 2 - Direction Normal - Input Mouse  		|
+| data_5    	    | Track 1 - Direction Normal - Input Mouse	        |
+| data_rec_1_1			| Track 1 - **Recoveries** - Input Mouse 		|
+| data_track_2_right_1    	    | Track 2 - Direction Normal, right side - Input Keyboard	|
+| data_track_slow_1_1			| Track 1 - Direction Normal - Input Mouse	|
+| data_track_slow_1_rev_1       | Track 1 - Direction Reverse - Input Mouse |
+| data_track_slow_2_1			| Track 2 - Direction Normal - Input Mouse	|
+| data_track_slow_2_rev_1		| Track 2 - Direction Reverse - Input Mouse	|
+
+These different conbinations included recoveries were used during training and validations and finally the datasets with better MSE values and empirical autonomouse driving results were used.
+
+For training, we used one lap per each circuit.
+Training: 
+- data_track_2_right_1
+- data_2
+Validation
+- data_4
+- data_5
+
+No need for data_rec_1_1 (recoveries) as final behaviour was very robust already.
+
+The implementation made very easy to just switch and try different recorded laps. Just by including in each list the name of the subfolders where data was stored.
+
+In process.py lines 99 and 100 we create a lists of the different data subfolders and we just include those subfolders we may want to use in training and validation
+```sh
+# Line 109 process.py
+data_training_groups = ['data_track_2_right_1', 'data_2']
+data_validation_groups = ['data_5', 'data_4']
+``` 
+
+#### 5. Data Image Preprocessing ####
+
+I tried different type of preprocessing steps in check the training/validation loss as well as final behaviour of the autonomouse car.
+
+The first step was to decide about the input image color space channgels to feed the model pipeline.
+I tried 3 different possibilities:
+- BGR - Blue, Green, Red channgels
+- YUV - Luma and chrominance components
+- HSV - Hue Saturation Value components.
+
+From the images below HSV, specially S component looked a good candidate initally due to how well it defined the road area, 
+
+![Road 1](./wrapupdata/tWH9g0EMBVsAAAAASUVORK5CYII=.png)
+
+Unfortunately shadows in the road were not well tracked by model using HSV components as input. 
+We also tested with YUV compoents as in NVIDIA paper but at the end the best performance was obtained with RGB values.
+
+Next step was to crop and transform the input image.  Initially the cropping was done inside the model but after some tries I decided to crop outside the model in the preprocessing phase together with the resizing of the image.  It led to better final results and simplified building the transformation pipeline with all steps included in one preprocessing function.
+
+Transformation is done by:
+- Crop from row 50 to 130
+- Resize final image to 64 pixels height x 96 pixels width.
+- In Keras model - Normalization
+
+Se below example.
+
+![Image preprocessed](./wrapupdata/H9XUJgAJTCrQAAAAAElFTkSuQmCC.png)
+
+Reducing image size was due to increase training speeds and didn't have any noticeable effect on final results.
+
+#### 6. Data Angles preprocessing - Smoothing ####
+
+We started feeding the model with direct angle values without any change from the data file. 
+Angles captured had lots of dependance on the input used to drive the car during data capturing. 
+When using keyboard the angle distribution was not smooth and when using the mouse the values contained lots of steering corrections.
+
+Those steering corrections done i.e. to adjust the steering within a curve **created many outliers** in the data and decreasing the model capabilities.
+We used an smooth interpolation of the angles and multiplied them by a 1.3 factor to increase a bit the steering capabilities of the model. 
+This helped a lot to add smooth autonomous driving by the model.
+
+![Angles preprocessed](./wrapupdata/zg4oAAAAASUVORK5CYII=.png)
+
+In above picture we can see in green the new smoothed angles multiplied by the 1.3 factor.
+
+Smoothing is done in data_utils.py using following function.
+
+```python
+dfn['angle'] = 1.3*scipy.signal.savgol_filter(df.angle,window_length=41,polyorder=2)
+```
+
+Savitzky-Golay filter is used to smoothing the data without distoring the signal by using a convolution process.
+
+
+#### 6. Data Augmentation ####
+
+As Neural Networks needs lots of data to be properly trained we need to ensure to create new samples out of existing data.
+The simulator is already a good tool to generate new data easily and many training sets were created in order for testing and validating the models.
+
+These training sets took into account driving in different directions in same circuit, with different driving behaviors and styles, input modes, speeds, recovery actions, etc.
+As part of the exercise I tried to keep minimum the amount of final training sets and stick to just one lap per circuit. Any additional data should be created by using some kind of data augmentation.
+
+The final data created followed these steps:
+- Use center camera and preprocessed angle.
+- Use left camera and angle increased by 30% - To simulate recovery from left side.
+- Use right camera and angle decreased by 30% - To simulate recovery from right side.
+- Flip above 3 images vertically and inverse angle.
+
+So from each frame we obtain a total of 6 final frames.
+
+Other techniques were initially applied like obscuring the image, or add other color spaces on top of the RGB ones supplied, but none of them had a big improvement and made training step slower.
+
+#### 7. Videos of Autonomous driving in emulator ####
+
+The target was to able to achieve circuit 2 in right side of lane autonomous driving and it was achieve perfect.
+
+**Click image below video to see Project video**
+
+[![Project video](http://img.youtube.com/vi/_sS6V2vSLGw/0.jpg)](http://www.youtube.com/watch?v=_sS6V2vSLGw)
+
+Files:
+
+* [Download Edited Video](./videos/Self_Driving_Car_Project.mp4)
+* [Download Circuit 1 Video](./videos/run_lap2.mp4)
+* [Download Circuit 2 Video](./videos/run_lap2.mp4)
+

@@ -45,3 +45,13 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+#project data folder
+
+data
+.ipython
+.jupyter
+.ipynb_checkpoints
+.matplotlib
+__pycache__
+.keras
